@@ -1,38 +1,41 @@
-use finance_analyzer
+USE finance_analyzer;
 
 -- Create the main users table
-CREATE TABLE users (
-    u_id INT PRIMARY KEY NOT NULL,
-	u_name varchar(255) NOT NULL,
-    u_mail VARCHAR(255) NOT NULL CHECK (u_mail LIKE '%@%.%'),
-    u_password CHAR(15) NOT NULL
-)
+CREATE TABLE Users (
+    UserID INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    UserName VARCHAR(255) NOT NULL,
+    UserEmail VARCHAR(255) NOT NULL CHECK (UserEmail LIKE '%@%.%'),
+    UserPassword CHAR(15) NOT NULL
+);
 
+-- Create the Categories table
 CREATE TABLE Categories (
-	c_id int primary key not null,
-	c_name varchar(50) not null,
-	c_description varchar(255) not null,
-	u_id INT NOT NULL,
-	FOREIGN KEY (u_id) REFERENCES users(u_id),
-)
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    CategoryName VARCHAR(50) NOT NULL,
+    CategoryDescription VARCHAR(255) NOT NULL,
+    UserID INT NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
 
-CREATE TABLE Purchases(
-	p_id int primary key not null,
-	p_date date not null,
-	p_description varchar(255) not null,
-	p_total_price float not null,
-	u_id INT NOT NULL,
-    c_id INT NOT NULL,
-    FOREIGN KEY (u_id) REFERENCES users(u_id),
-    FOREIGN KEY (c_id) REFERENCES Categories(c_id)
-)
+-- Create the Purchases table
+CREATE TABLE Purchases (
+    PurchaseID INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    PurchaseDate DATE NOT NULL,
+    PurchaseDescription VARCHAR(255) NOT NULL,
+    PurchaseTotalPrice FLOAT NOT NULL,
+    UserID INT NOT NULL,
+    CategoryID INT NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
 
-CREATE TABLE Payments(
-	pmnt_id int primary key not null,
-	pmnt_cuote_number tinyint not null,
-	pmnt_date date,
-	u_id INT NOT NULL,
-	p_id int not null,
-	FOREIGN KEY (u_id) REFERENCES users(u_id),
-	FOREIGN KEY (p_id) REFERENCES purchases(p_id),
-)
+-- Create the Payments table
+CREATE TABLE Payments (
+    PaymentID INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+    PaymentCuoteNumber TINYINT NOT NULL,
+    PaymentDate DATE,
+    UserID INT NOT NULL,
+    PurchaseID INT NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (PurchaseID) REFERENCES Purchases(PurchaseID)
+);

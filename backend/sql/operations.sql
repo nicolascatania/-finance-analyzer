@@ -1,29 +1,112 @@
-Use finance_analyzer
+USE finance_analyzer;
 
-Select * from users
-
-Select u.u_id, u.u_name, p.p_id,p.p_description, p.p_total_price from users u JOIN Purchases p on u.u_id = p.u_id
-Order by (u.u_id)
-
-SELECT u.u_id, u.u_name, SUM(p.p_total_price) AS total_purchases
-FROM users u
-JOIN Purchases p ON u.u_id = p.u_id
-GROUP BY u.u_id, u.u_name
-ORDER BY u.u_id;
-
+-- Get all the money spent by a user in a certain period of time (this week, any month, year, etc)
 ALTER PROCEDURE GetTotalSpentByUser
     @UserID INT,
     @StartDate DATE,
     @EndDate DATE
 AS
 BEGIN
-    -- Use ISNULL to return 0 if no records are found
-    SELECT ISNULL(SUM(p.p_total_price), 0) AS TotalSpent
+    SELECT ISNULL(SUM(p.PurchaseTotalPrice), 0) AS TotalSpent
     FROM Purchases p
-    WHERE p.u_id = @UserID
-      AND p.p_date BETWEEN @StartDate AND @EndDate;
+    WHERE p.UserID = @UserID
+      AND p.PurchaseDate BETWEEN @StartDate AND @EndDate;
+END;
+
+-- Execution example
+EXEC GetTotalSpentByUser @UserID = 21, @StartDate = '2024-01-01', @EndDate = '2024-12-31';
+
+-- Get user information
+Create PROCEDURE GetUserDetails
+    @UserID INT
+AS
+BEGIN
+    SELECT u.UserID, u.UserName, u.UserEmail, u.UserPassword
+    FROM Users u
+    WHERE u.UserID = @UserID;
+END;
+
+-- Execution example
+EXEC GetUserDetails @UserID = 21;
+
+-- Get top N movements of a specific user
+CREATE PROCEDURE GetLastNMovements
+    @UserID INT,
+    @TopN INT
+AS
+BEGIN
+    SELECT TOP (@TopN) p.PurchaseID, p.PurchaseDate, p.PurchaseDescription, p.PurchaseTotalPrice
+    FROM Purchases p
+    WHERE p.UserID = @UserID
+    ORDER BY p.PurchaseDate DESC;
+END;
+
+-- Execution example
+EXEC GetLastNMovements @UserID = 21, @TopN = 5;
+
+-- Get total spent for all categories by a user (COUNTING ALL PURCHASES)
+CREATE PROCEDURE GetTotalExpensesByCategory
+    @UserID INT
+AS
+BEGIN
+    SELECT c.CategoryID, c.CategoryName, ISNULL(SUM(p.PurchaseTotalPrice), 0) AS TotalSpent
+    FROM Categories c
+    LEFT JOIN Purchases p ON c.CategoryID = p.CategoryID AND p.UserID = @UserID
+    WHERE c.UserID = @UserID
+    GROUP BY c.CategoryID, c.CategoryName
+    ORDER BY c.CategoryName;
+END;
+
+-- Execution example
+EXEC GetTotalExpensesByCategory @UserID = 21;
+
+
+
+--Get the total money spent in current month
+CREATE PROCEDURE GetMonthlyExpensesForUser
+    @UserID INT
+AS
+BEGIN
+    DECLARE @StartDate DATE = DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1);
+    DECLARE @EndDate DATE = EOMONTH(GETDATE());
+
+    SELECT
+        ISNULL(SUM(p.PurchaseTotalPrice), 0) AS TotalSpent
+    FROM Purchases p
+    WHERE
+        p.UserID = @UserID
+        AND p.PurchaseDate BETWEEN @StartDate AND @EndDate;
 END;
 
 
-EXEC GetTotalSpentByUser @UserID = 1, @StartDate = '2024-12-01', @EndDate = '2024-12-31';
+EXEC GetMonthlyExpensesForUser @UserID = 21;
 
+
+
+--Get the total money spent in current month grouped by category
+CREATE PROCEDURE GetMonthlyExpensesByCategoryForUser
+    @UserID INT
+AS
+BEGIN
+
+    DECLARE @StartDate DATE = DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1);
+    DECLARE @EndDate DATE = EOMONTH(GETDATE());
+
+    SELECT
+        c.CategoryID,
+        c.CategoryName,
+        ISNULL(SUM(p.PurchaseTotalPrice), 0) AS TotalSpent
+    FROM Purchases p
+    INNER JOIN Categories c ON p.CategoryID = c.CategoryID
+    WHERE
+        p.UserID = @UserID
+        AND p.PurchaseDate BETWEEN @StartDate AND @EndDate
+    GROUP BY
+        c.CategoryID,
+        c.CategoryName
+    ORDER BY
+        c.CategoryName;
+END;
+
+
+EXEC GetMonthlyExpensesByCategoryForUser @UserID = 21;
